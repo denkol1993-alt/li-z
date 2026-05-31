@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Кликер | Игровой центр</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            overflow: hidden;
+            height: 100%;
+        }
+        body {
+            background: #000;
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: background 0.3s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body.light-theme {
+            background: #e0e5ec;
+        }
+        .top-bar {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(8px);
+            padding: 5px 12px;
+            border-radius: 30px;
+            border: 1px solid #0af;
+            transition: all 0.3s;
+        }
+        body.light-theme .top-bar {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: #3a86ff;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .control-icon {
+            font-size: 0.9rem;
+            color: #ffd966;
+            width: 18px;
+            text-align: center;
+        }
+        body.light-theme .control-icon {
+            color: #0a2a44;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #1e2a3a;
+            transition: 0.3s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #0af;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #3a86ff;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: #fff;
+        }
+        body.light-theme input:checked + .slider {
+            background-color: #3a86ff;
+        }
+        body.light-theme .slider {
+            background-color: #aaa;
+        }
+        .sound-icon-btn {
+            color: #ffd966;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+        }
+        .sound-icon-btn:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+        body.light-theme .sound-icon-btn {
+            color: #0a2a44;
+        }
+        body.light-theme .sound-icon-btn:hover {
+            color: #000;
+            background: rgba(0,0,0,0.05);
+        }
+        #rainCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            transition: filter 0.4s ease, opacity 0.3s;
+        }
+        body.light-theme #rainCanvas {
+            opacity: 0.5;
+        }
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(16px);
+            color: #0af;
+            padding: 10px 24px;
+            border-radius: 50px;
+            border: 1px solid #0af;
+            font-size: 0.95rem;
+            font-weight: 600;
+            z-index: 3000;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        body.light-theme .toast-notification {
+            background: rgba(255, 255, 255, 0.95);
+            color: #2e7d32;
+            border-color: #4caf50;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+        }
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .toast-icon {
+            font-size: 1.1rem;
+            color: #4caf50;
+        }
+        .game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: visible;
+            opacity: 1;
+        }
+        .game-card {
+            background: rgba(10, 20, 35, 0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 2rem;
+            width: 95%;
+            max-width: 380px;
+            box-shadow: 0 0 30px rgba(0, 170, 255, 0.3);
+            transition: all 0.3s;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+            border: 1px solid rgba(0, 170, 255, 0.3);
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid rgba(0, 170, 255, 0.4);
+        }
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 0.9rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #7ca3c9;
+            cursor: pointer;
+            transition: 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn.active {
+            color: #0af;
+            border-bottom-color: #0af;
+            background: rgba(0, 170, 255, 0.1);
+        }
+        .tab-content {
+            padding: 1.2rem;
+            text-align: center;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.6rem;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 0.5rem 1rem;
+            border-radius: 2.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #bbf0ff;
+            font-size: 0.9rem;
+        }
+        .stat-value {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #0af;
+            line-height: 1;
+            transition: transform 0.1s ease;
+        }
+        .stat-value.pulse {
+            transform: scale(1.2);
+        }
+        .energy-wrapper {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            padding: 6px 12px;
+            margin-bottom: 0.8rem;
+        }
+        .energy-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .energy-bar {
+            flex: 1;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .energy-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #0af, #5a9eff);
+            border-radius: 20px;
+            transition: width 0.15s linear;
+            box-shadow: 0 0 4px #0af;
+        }
+        .energy-value {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #8cb3d9;
+            min-width: 45px;
+            text-align: right;
+        }
+        .click-button {
+            background: radial-gradient(circle at 30% 30%, #f5c542, #e6a017);
+            border: none;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin: 0.6rem auto;
+            box-shadow: 0 0 18px #ffaa33, 0 6px 15px rgba(0,0,0,0.5);
+            transition: transform 0.05s linear;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .click-button img {
+            width: 75%;
+            height: auto;
+            pointer-events: none;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        .click-button:active {
+            transform: scale(0.96);
+            box-shadow: 0 0 28px #ffcc44;
+        }
+        .click-button.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(0.3);
+        }
+        .auto-clicker {
+            margin-top: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 0.4rem 1rem;
+            border-radius: 3rem;
+        }
+        .auto-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #bbf0ff;
+        }
+        .auto-toggle {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+        .auto-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #f44336;
+            transition: 0.3s;
+            border-radius: 34px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        input:checked+.toggle-slider {
+            background-color: #4caf50;
+        }
+        input:checked+.toggle-slider:before {
+            transform: translateX(24px);
+        }
+        .upgrades-section {
+            margin-top: 1rem;
+            border-top: 1px solid rgba(0, 170, 255, 0.3);
+            padding-top: 0.9rem;
+        }
+        .upgrades-title {
+            font-size: 0.9rem;
+            color: #bbf0ff;
+            margin-bottom: 0.7rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        .upgrade-card {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            border-radius: 1.2rem;
+            padding: 0.7rem 1rem;
+            border: 1px solid rgba(0, 170, 255, 0.5);
+            box-shadow: 0 0 10px rgba(0, 170, 255, 0.2);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+            margin-bottom: 0.6rem;
+        }
+        .upgrade-card:hover {
+            border-color: #0af;
+            box-shadow: 0 0 15px rgba(0, 170, 255, 0.4);
+        }
+        .upgrade-info {
+            text-align: left;
+            flex: 1 1 auto;
+        }
+        .upgrade-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #bbf0ff;
+            margin-bottom: 3px;
+        }
+        .upgrade-stats {
+            font-size: 0.75rem;
+            color: #7ca3c9;
+        }
+        .upgrade-btn {
+            background: #1e2a3a;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #bbf0ff;
+            transition: 0.2s;
+            min-width: 100px;
+            text-align: center;
+            touch-action: manipulation;
+            flex-shrink: 0;
+        }
+        .upgrade-btn:hover:not(:disabled) {
+            background: #0af;
+            color: #000;
+            box-shadow: 0 0 8px #0af;
+        }
+        .upgrade-btn:disabled {
+            background: #2a3a4a;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffcc44;
+            text-shadow: 0 0 4px white;
+            animation: particleFloat 0.8s ease-out forwards;
+            z-index: 2000;
+            will-change: transform, opacity;
+        }
+        @keyframes particleFloat {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-80px) scale(1.3); opacity: 0; }
+        }
+        body.light-theme .game-card {
+            background: rgba(240, 245, 255, 0.92);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #3a86ff;
+        }
+        body.light-theme .stat-item { color: #0a2a44; }
+        body.light-theme .stat-value { color: #3a86ff; }
+        body.light-theme .click-button {
+            box-shadow: 0 0 18px #ffaa33;
+        }
+        body.light-theme .energy-fill {
+            background: linear-gradient(90deg, #3a86ff, #5a9eff);
+        }
+        body.light-theme .upgrade-card {
+            background: rgba(0, 0, 0, 0.08);
+            border-color: #3a86ff;
+            box-shadow: 0 0 8px rgba(58, 134, 255, 0.3);
+        }
+        body.light-theme .upgrade-btn {
+            background: #e0e8f0;
+            color: #0a2a44;
+        }
+        body.light-theme .upgrade-btn:hover:not(:disabled) {
+            background: #3a86ff;
+            color: white;
+        }
+        body.light-theme .upgrade-btn:disabled {
+            background: #ccc;
+            color: #666;
+        }
+        body.light-theme .auto-toggle .toggle-slider {
+            background-color: #3a86ff;
+        }
+        body.light-theme .auto-toggle input:checked+.toggle-slider {
+            background-color: #4caf50;
+        }
+        .profile-content {
+            color: #bbf0ff;
+            padding: 0.2rem 0;
+        }
+        .profile-stat {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.6rem 0;
+            font-size: 0.9rem;
+        }
+        .profile-stat span:last-child {
+            font-weight: 700;
+            color: #0af;
+            font-size: 1rem;
+        }
+        .profile-input {
+            width: 100%;
+            padding: 0.7rem;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 2rem;
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+            margin-bottom: 0.6rem;
+        }
+        .profile-input:focus {
+            border-color: #0af;
+        }
+        body.light-theme .profile-input {
+            background: rgba(0,0,0,0.05);
+            color: #111;
+            border-color: #aaa;
+        }
+        .exchange-box {
+            background: rgba(0, 170, 255, 0.1);
+            border: 1px solid rgba(0, 170, 255, 0.5);
+            border-radius: 1.2rem;
+            padding: 1rem;
+            margin: 0.8rem 0;
+        }
+        .exchange-input {
+            width: 100%;
+            padding: 0.7rem;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 2rem;
+            color: #fff;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 0.6rem;
+            outline: none;
+        }
+        .exchange-input:focus {
+            border-color: #0af;
+            box-shadow: 0 0 8px #0af;
+        }
+        .exchange-result {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffd966;
+            margin-bottom: 0.6rem;
+        }
+        body.light-theme .exchange-box {
+            background: rgba(58, 134, 255, 0.1);
+        }
+        body.light-theme .exchange-input {
+            background: rgba(0,0,0,0.05);
+            color: #111;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="top-bar">
+        <div class="control-group">
+            <span class="control-icon">🌙</span>
+            <label class="switch">
+                <input type="checkbox" id="themeToggle">
+                <span class="slider"></span>
+            </label>
+            <span class="control-icon" style="font-size:0.8rem;">☀️</span>
+        </div>
+        <div style="width:1px; height:20px; background:rgba(255,255,255,0.25); margin:0 4px;"></div>
+        <div class="sound-icon-btn" id="soundToggleBtn" title="Вкл/Выкл звук">
+            <i class="fas fa-volume-up"></i>
+        </div>
+    </div>
+
+    <canvas id="rainCanvas"></canvas>
+
+    <div id="toastNotification" class="toast-notification">
+        <span class="toast-icon">✓</span>
+        <span class="toast-text"></span>
+    </div>
+
+    <div class="game-container" id="gameContainer">
+        <div class="game-card">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="game">ИГРА</button>
+                <button class="tab-btn" data-tab="profile">ПРОФИЛЬ</button>
+            </div>
+            <div class="tab-content" id="gameTabContent">
+                <div class="stats">
+                    <div class="stat-item"><i class="fas fa-coins"></i> <span class="stat-value" id="scoreValue">0</span></div>
+                    <div class="stat-item"><i class="fas fa-hand-pointer"></i> <span class="stat-value" id="clicksValue">0</span></div>
+                    <div class="stat-item"><i class="fas fa-ruble-sign"></i> <span class="stat-value" id="rublesValue">0</span></div>
+                </div>
+                <div class="energy-wrapper">
+                    <div class="energy-bar-container">
+                        <div class="energy-bar">
+                            <div class="energy-fill" id="energyFill"></div>
+                        </div>
+                        <div class="energy-value" id="energyPercent">100</div>
+                    </div>
+                </div>
+                <button class="click-button" id="clickButton">
+                    <img src="https://png.pngtree.com/png-vector/20240827/ourmid/pngtree-stack-of-gold-pound-sterling-coins-with-a-gradient-effect-used-vector-png-image_13579789.png" alt="монета">
+                </button>
+                <div class="auto-clicker">
+                    <span class="auto-label"><i class="fas fa-robot"></i> Авто-клик</span>
+                    <label class="auto-toggle">
+                        <input type="checkbox" id="autoClickToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="upgrades-section">
+                    <div class="upgrades-title">⚡ УЛУЧШЕНИЯ</div>
+                    <div class="upgrades-grid" id="upgradesGrid"></div>
+                </div>
+            </div>
+            <div class="tab-content" id="profileTabContent" style="display: none;">
+                <div class="profile-content">
+                    <h2 style="color:#bbf0ff; margin-bottom:1rem; font-size:1.3rem;">👤 ЛИЧНЫЙ КАБИНЕТ</h2>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        <input type="text" id="newProfileName" class="profile-input" placeholder="Новое имя" style="flex:1;">
+                        <button id="changeNameBtn" class="upgrade-btn">Сменить</button>
+                    </div>
+                    <p id="profileUserName" style="color:#fff; font-size:1.1rem; margin-bottom:1rem; font-weight:600;"></p>
+                    <div class="profile-stat">
+                        <span>💰 Монеты</span>
+                        <span id="profileScore">0</span>
+                    </div>
+                    <div class="profile-stat">
+                        <span>🖱️ Клики</span>
+                        <span id="profileClicks">0</span>
+                    </div>
+                    <div class="profile-stat">
+                        <span>💵 Рубли</span>
+                        <span id="profileRubles">0</span>
+                    </div>
+                    <div class="exchange-box">
+                        <input type="number" id="exchangeInput" class="exchange-input" placeholder="Сколько монет обменять?" min="1000" step="1000">
+                        <div class="exchange-result" id="exchangePreview"></div>
+                        <button id="exchangeBtn" class="upgrade-btn" style="width:100%;">Обменять</button>
+                    </div>
+                    <div class="profile-stat">
+                        <span>💪 Мощный клик</span>
+                        <span id="profilePowerLevel">0/100</span>
+                    </div>
+                    <div class="profile-stat">
+                        <span>⚙️ Мощность авто-клика</span>
+                        <span id="profileAutoPowerLevel">0/100</span>
+                    </div>
+                    <button id="profileLogoutBtn" class="upgrade-btn" style="margin-top:1rem; width:100%; background:#c0392b; color:white;">Сбросить прогресс</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const storage = {
+                get(key) { try { return localStorage.getItem(key); } catch (e) { return null; } },
+                set(key, value) { try { localStorage.setItem(key, value); } catch (e) {} },
+                getJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } },
+                setJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+            };
+
+            let audioCtx = null;
+            let soundEnabled = storage.get('soundEnabled') !== 'false';
+            const soundToggleBtn = document.getElementById('soundToggleBtn');
+            const soundIcon = soundToggleBtn.querySelector('i');
+
+            function updateSoundIcon() {
+                if (soundEnabled) { soundIcon.className = 'fas fa-volume-up'; } else { soundIcon.className = 'fas fa-volume-mute'; }
+            }
+            updateSoundIcon();
+            soundToggleBtn.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                storage.set('soundEnabled', soundEnabled);
+                updateSoundIcon();
+            });
+
+            function playClickSound() {
+                if (!soundEnabled) return;
+                try {
+                    if (!audioCtx) { audioCtx = new(window.AudioContext || window.webkitAudioContext)(); }
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.07);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + 0.07);
+                } catch(e) {}
+            }
+
+            // Rain animation
+            const rainCanvas = document.getElementById('rainCanvas');
+            const rainCtx = rainCanvas.getContext('2d');
+            let rainWidth, rainHeight;
+            let raindrops = [];
+            const DROP_COUNT = 200;
+
+            function initRain() {
+                raindrops = [];
+                for (let i = 0; i < DROP_COUNT; i++) {
+                    raindrops.push({
+                        x: Math.random() * rainWidth,
+                        y: Math.random() * rainHeight,
+                        length: 6 + Math.random() * 18,
+                        speed: 2 + Math.random() * 5,
+                        color: ['rgba(180,210,255,0.7)', 'rgba(200,225,255,0.6)', 'rgba(150,185,255,0.75)', 'rgba(210,235,255,0.5)'][Math.floor(Math.random() * 4)]
+                    });
+                }
+            }
+            function updateRain() {
+                for (let d of raindrops) {
+                    d.y += d.speed;
+                    if (d.y > rainHeight) { d.y = -d.length; d.x = Math.random() * rainWidth; }
+                }
+            }
+            function drawRain() {
+                rainCtx.clearRect(0, 0, rainWidth, rainHeight);
+                rainCtx.fillStyle = 'rgba(0,0,0,0.15)';
+                rainCtx.fillRect(0, 0, rainWidth, rainHeight);
+                rainCtx.lineCap = 'round';
+                for (let d of raindrops) {
+                    rainCtx.beginPath();
+                    rainCtx.moveTo(d.x, d.y);
+                    rainCtx.lineTo(d.x, d.y + d.length);
+                    rainCtx.strokeStyle = d.color;
+                    rainCtx.lineWidth = 1.5;
+                    rainCtx.stroke();
+                    rainCtx.beginPath();
+                    rainCtx.arc(d.x, d.y + d.length, 1.2, 0, Math.PI * 2);
+                    rainCtx.fillStyle = 'rgba(230,245,255,0.8)';
+                    rainCtx.fill();
+                }
+            }
+            function resizeRain() {
+                rainWidth = window.innerWidth;
+                rainHeight = window.innerHeight;
+                rainCanvas.width = rainWidth;
+                rainCanvas.height = rainHeight;
+                initRain();
+                drawRain();
+            }
+            function rainLoop() {
+                updateRain();
+                drawRain();
+                requestAnimationFrame(rainLoop);
+            }
+            window.addEventListener('resize', resizeRain);
+            resizeRain();
+            rainLoop();
+
+            const themeToggle = document.getElementById('themeToggle');
+            if (storage.get('theme') === 'light') {
+                document.body.classList.add('light-theme');
+                themeToggle.checked = true;
+            }
+            themeToggle.addEventListener('change', () => {
+                if (themeToggle.checked) { document.body.classList.add('light-theme'); storage.set('theme', 'light'); } 
+                else { document.body.classList.remove('light-theme'); storage.set('theme', 'dark'); }
+            });
+
+            const toast = document.getElementById('toastNotification');
+            const toastText = toast.querySelector('.toast-text');
+            let toastTimer;
+            function showToast(message, duration = 2000) {
+                toastText.textContent = message;
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+            }
+
+            // Tabs
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const gameTabContent = document.getElementById('gameTabContent');
+            const profileTabContent = document.getElementById('profileTabContent');
+            const profileLogoutBtn = document.getElementById('profileLogoutBtn');
+            const changeNameBtn = document.getElementById('changeNameBtn');
+            const newProfileNameInput = document.getElementById('newProfileName');
+            const exchangeBtn = document.getElementById('exchangeBtn');
+            const exchangeInput = document.getElementById('exchangeInput');
+            const exchangePreview = document.getElementById('exchangePreview');
+
+            const DEFAULT_USER = "Игрок";
+            
+            class ClickerGame {
+                constructor() {
+                    this.userName = DEFAULT_USER;
+                    this.data = { score: 0, clicks: 0, rubles: 0 };
+                    this.powerLevel = 0;
+                    this.autoPowerLevel = 0;
+                    this.energy = 100;
+                    this.maxEnergy = 100;
+                    this.energyRegenRate = 1.2;
+                    this.autoClickEnabled = false;
+                    this.autoClickInterval = null;
+                    this.energyLoopId = null;
+                    this.lastEnergyTimestamp = 0;
+                    this.gameActive = true;
+
+                    this.scoreEl = document.getElementById('scoreValue');
+                    this.clicksEl = document.getElementById('clicksValue');
+                    this.rublesEl = document.getElementById('rublesValue');
+                    this.energyFillEl = document.getElementById('energyFill');
+                    this.energyPercentEl = document.getElementById('energyPercent');
+                    this.clickBtn = document.getElementById('clickButton');
+                    this.autoToggle = document.getElementById('autoClickToggle');
+                    this.upgradesGrid = document.getElementById('upgradesGrid');
+
+                    this.clickBtn.addEventListener('click', this.handleClick.bind(this));
+                    this.autoToggle.addEventListener('change', (e) => this.setAutoClick(e.target.checked));
+                    this.maxParticles = 10;
+                    this.activeParticles = 0;
+                    
+                    this.loadProgress();
+                    this.energy = this.maxEnergy;
+                    this.updateEnergyUI();
+                    this.startEnergyLoop();
+                    this.renderUpgrades();
+                    
+                    const savedAuto = storage.get(`autoClick_${this.userName}`);
+                    this.autoClickEnabled = savedAuto === 'true';
+                    this.autoToggle.checked = this.autoClickEnabled;
+                    this.setAutoClick(this.autoClickEnabled);
+                    this.updateUI();
+                    this.updateProfileView();
+                }
+
+                loadProgress() {
+                    const saved = storage.getJSON(`clicker_${this.userName}`);
+                    this.data = saved ? { score: saved.score || 0, clicks: saved.clicks || 0, rubles: saved.rubles || 0 } : { score: 0, clicks: 0, rubles: 0 };
+                    this.powerLevel = parseInt(storage.get(`power_${this.userName}`)) || 0;
+                    this.autoPowerLevel = parseInt(storage.get(`autopower_${this.userName}`)) || 0;
+                }
+
+                saveProgress() {
+                    storage.setJSON(`clicker_${this.userName}`, this.data);
+                    storage.set(`power_${this.userName}`, this.powerLevel);
+                    storage.set(`autopower_${this.userName}`, this.autoPowerLevel);
+                }
+
+                updateUI() {
+                    this.scoreEl.textContent = this.data.score;
+                    this.clicksEl.textContent = this.data.clicks;
+                    this.rublesEl.textContent = this.data.rubles;
+                    this.scoreEl.classList.add('pulse');
+                    setTimeout(() => this.scoreEl.classList.remove('pulse'), 100);
+                    this.renderUpgrades();
+                    this.updateProfileView();
+                }
+
+                updateProfileView() {
+                    document.getElementById('profileUserName').textContent = this.userName;
+                    document.getElementById('profileScore').textContent = this.data.score;
+                    document.getElementById('profileClicks').textContent = this.data.clicks;
+                    document.getElementById('profileRubles').textContent = this.data.rubles;
+                    document.getElementById('profilePowerLevel').textContent = `${this.powerLevel}/100`;
+                    document.getElementById('profileAutoPowerLevel').textContent = `${this.autoPowerLevel}/100`;
+                }
+
+                updateEnergyUI() {
+                    const percent = Math.min(100, Math.max(0, this.energy));
+                    this.energyFillEl.style.width = percent + '%';
+                    this.energyPercentEl.textContent = Math.round(percent);
+                    this.clickBtn.classList.toggle('disabled', this.energy <= 0);
+                }
+
+                startEnergyLoop() {
+                    this.lastEnergyTimestamp = performance.now();
+                    const loop = (now) => {
+                        if (!this.gameActive) return;
+                        const delta = Math.min(0.5, (now - this.lastEnergyTimestamp) / 1000);
+                        if (this.energy < this.maxEnergy) {
+                            this.energy = Math.min(this.maxEnergy, this.energy + delta * this.energyRegenRate);
+                            this.updateEnergyUI();
+                        }
+                        this.lastEnergyTimestamp = now;
+                        this.energyLoopId = requestAnimationFrame(loop);
+                    };
+                    this.energyLoopId = requestAnimationFrame(loop);
+                }
+                stopEnergyLoop() { if (this.energyLoopId) { cancelAnimationFrame(this.energyLoopId); this.energyLoopId = null; } }
+
+                handleClick() {
+                    if (!this.gameActive || this.energy <= 0) { if (this.energy <= 0) showToast('Нет энергии!', 1200); return; }
+                    this.energy = Math.max(0, this.energy - 1);
+                    this.updateEnergyUI();
+                    const gain = 1 + this.powerLevel;
+                    this.data.score += gain;
+                    this.data.clicks += 1;
+                    this.updateUI();
+                    this.saveProgress();
+                    this.spawnParticle(`+${gain}`);
+                    playClickSound();
+                }
+
+                getPowerPrice() { return 100 * Math.pow(2, this.powerLevel); }
+                getAutoPowerPrice() { return 200 * Math.pow(2, this.autoPowerLevel); }
+
+                buyUpgrade(type) {
+                    if (!this.gameActive) return;
+                    if (type === 'power') {
+                        if (this.powerLevel >= 100) { showToast('Макс. уровень!'); return; }
+                        const price = this.getPowerPrice();
+                        if (this.data.score >= price) {
+                            this.data.score -= price;
+                            this.powerLevel++;
+                            this.saveProgress();
+                            this.updateUI();
+                            showToast(`Мощный клик ур. ${this.powerLevel}!`, 1500);
+                        } else showToast(`Нужно ${price} монет`, 1200);
+                    } else if (type === 'autopower') {
+                        if (this.autoPowerLevel >= 100) { showToast('Макс. уровень!'); return; }
+                        const price = this.getAutoPowerPrice();
+                        if (this.data.score >= price) {
+                            this.data.score -= price;
+                            this.autoPowerLevel++;
+                            this.saveProgress();
+                            this.updateUI();
+                            showToast(`Авто-клик ур. ${this.autoPowerLevel}!`, 1500);
+                            if (this.autoClickEnabled) this.restartAutoClick();
+                        } else showToast(`Нужно ${price} монет`, 1200);
+                    }
+                }
+
+                restartAutoClick() {
+                    if (this.autoClickEnabled) {
+                        this.stopAutoClick();
+                        this.startAutoClick();
+                    }
+                }
+
+                renderUpgrades() {
+                    const powerPrice = this.getPowerPrice();
+                    const autoPrice = this.getAutoPowerPrice();
+                    const powerMaxed = this.powerLevel >= 100;
+                    const autoMaxed = this.autoPowerLevel >= 100;
+                    this.upgradesGrid.innerHTML = `
+                    <div class="upgrade-card">
+                        <div class="upgrade-info"><div class="upgrade-name">💪 Мощный клик</div><div class="upgrade-stats">Уровень ${this.powerLevel}/100 | +${this.powerLevel} монет</div></div>
+                        <button class="upgrade-btn" data-upgrade="power" ${powerMaxed ? 'disabled' : ''} style="${!powerMaxed && this.data.score >= powerPrice ? 'background:#4caf50;color:#fff' : ''}">${powerMaxed ? 'Макс' : `Купить (${powerPrice})`}</button>
+                    </div>
+                    <div class="upgrade-card">
+                        <div class="upgrade-info"><div class="upgrade-name">⚙️ Авто-мощность</div><div class="upgrade-stats">Уровень ${this.autoPowerLevel}/100 | +${this.autoPowerLevel}/сек</div></div>
+                        <button class="upgrade-btn" data-upgrade="autopower" ${autoMaxed ? 'disabled' : ''} style="${!autoMaxed && this.data.score >= autoPrice ? 'background:#4caf50;color:#fff' : ''}">${autoMaxed ? 'Макс' : `Купить (${autoPrice})`}</button>
+                    </div>`;
+                    document.querySelectorAll('.upgrade-btn').forEach(b => b.addEventListener('click', (e) => this.buyUpgrade(e.currentTarget.dataset.upgrade)));
+                }
+
+                setAutoClick(enabled) {
+                    this.autoClickEnabled = enabled;
+                    storage.set(`autoClick_${this.userName}`, enabled);
+                    if (enabled && this.gameActive) this.startAutoClick();
+                    else this.stopAutoClick();
+                }
+                startAutoClick() {
+                    this.stopAutoClick();
+                    this.autoClickInterval = setInterval(() => {
+                        if (this.gameActive && this.autoClickEnabled) {
+                            const income = 1 + this.powerLevel + this.autoPowerLevel;
+                            this.data.score += income;
+                            this.data.clicks += 1;
+                            this.updateUI();
+                            this.saveProgress();
+                            this.spawnParticle(`+${income}`);
+                            playClickSound();
+                        }
+                    }, 1000);
+                }
+                stopAutoClick() { if (this.autoClickInterval) { clearInterval(this.autoClickInterval); this.autoClickInterval = null; } }
+
+                spawnParticle(text) {
+                    if (this.activeParticles >= this.maxParticles) return;
+                    this.activeParticles++;
+                    const el = document.createElement('div');
+                    el.className = 'particle';
+                    el.textContent = text;
+                    const rect = this.clickBtn.getBoundingClientRect();
+                    el.style.left = (rect.left + rect.width/2 + (Math.random()-0.5)*60) + 'px';
+                    el.style.top = (rect.top + rect.height/2 + (Math.random()-0.5)*40) + 'px';
+                    el.addEventListener('animationend', () => { el.remove(); this.activeParticles--; });
+                    document.body.appendChild(el);
+                }
+                
+                resetProgress() {
+                    if (confirm('Сбросить весь прогресс? Все монеты, клики и улучшения будут удалены.')) {
+                        this.data = { score: 0, clicks: 0, rubles: 0 };
+                        this.powerLevel = 0;
+                        this.autoPowerLevel = 0;
+                        this.saveProgress();
+                        storage.set(`autoClick_${this.userName}`, false);
+                        this.autoClickEnabled = false;
+                        this.autoToggle.checked = false;
+                        this.setAutoClick(false);
+                        this.updateUI();
+                        this.energy = this.maxEnergy;
+                        this.updateEnergyUI();
+                        showToast('Прогресс сброшен!', 2000);
+                    }
+                }
+                
+                changeName(newName) {
+                    if (!newName || newName.trim().length < 2) { showToast('Имя минимум 2 символа', 2000); return false; }
+                    newName = newName.trim();
+                    if (newName === this.userName) { showToast('Имя совпадает', 2000); return false; }
+                    const oldName = this.userName;
+                    const oldData = { ...this.data };
+                    const oldPower = this.powerLevel;
+                    const oldAutoPower = this.autoPowerLevel;
+                    const oldAutoState = this.autoClickEnabled;
+                    
+                    this.userName = newName;
+                    this.loadProgress();
+                    if (this.data.score === 0 && this.data.clicks === 0 && this.powerLevel === 0) {
+                        this.data = oldData;
+                        this.powerLevel = oldPower;
+                        this.autoPowerLevel = oldAutoPower;
+                        this.saveProgress();
+                        this.autoClickEnabled = oldAutoState;
+                        storage.set(`autoClick_${this.userName}`, oldAutoState);
+                        this.setAutoClick(this.autoClickEnabled);
+                    }
+                    this.updateUI();
+                    this.updateProfileView();
+                    newProfileNameInput.value = '';
+                    showToast(`Имя изменено на ${this.userName}!`, 2000);
+                    return true;
+                }
+                
+                exchangeCoins(amount) {
+                    if (isNaN(amount) || amount < 1000) { showToast('Мин. 1000 монет', 2000); return false; }
+                    if (amount % 1000 !== 0) { showToast('Кратно 1000', 2000); return false; }
+                    if (this.data.score < amount) { showToast('Недостаточно монет', 2000); return false; }
+                    const rublesGain = Math.floor(amount / 1000);
+                    this.data.score -= amount;
+                    this.data.rubles = (this.data.rubles || 0) + rublesGain;
+                    this.saveProgress();
+                    this.updateUI();
+                    showToast(`Обменяно ${amount} монет на ${rublesGain} ₽`, 2000);
+                    return true;
+                }
+            }
+
+            const game = new ClickerGame();
+            
+            // Profile interactions
+            profileLogoutBtn.addEventListener('click', () => game.resetProgress());
+            changeNameBtn.addEventListener('click', () => game.changeName(newProfileNameInput.value));
+            exchangeBtn.addEventListener('click', () => {
+                const amount = parseInt(exchangeInput.value);
+                if (game.exchangeCoins(amount)) {
+                    exchangeInput.value = '';
+                    exchangePreview.textContent = '';
+                }
+            });
+            exchangeInput.addEventListener('input', () => {
+                let amount = parseInt(exchangeInput.value);
+                if (isNaN(amount) || amount < 1000) exchangePreview.textContent = 'Минимум 1000 монет';
+                else if (amount % 1000 !== 0) exchangePreview.textContent = 'Сумма должна быть кратна 1000';
+                else exchangePreview.textContent = `Вы получите ${Math.floor(amount / 1000)} ₽`;
+            });
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const tab = btn.dataset.tab;
+                    if (tab === 'game') {
+                        gameTabContent.style.display = 'block';
+                        profileTabContent.style.display = 'none';
+                    } else {
+                        gameTabContent.style.display = 'none';
+                        profileTabContent.style.display = 'block';
+                        game.updateProfileView();
+                        exchangeInput.value = '';
+                        exchangePreview.textContent = '';
+                    }
+                });
+            });
+
+            window.addEventListener('beforeunload', () => { game.gameActive = false; game.stopEnergyLoop(); game.stopAutoClick(); });
+        })();
+    </script>
+</body>
+</html>
